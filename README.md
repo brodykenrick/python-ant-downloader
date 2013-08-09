@@ -1,3 +1,13 @@
+# Modified Python Ant Downloader
+Modifications were made to make the tool easier for more quickly understanding interactions with ANT devices. These changes don't really help the standard use case of Python Ant Downloader (but will be helpful if you are trying to build upon this great platform to do other intersting things with ANT+ Networks).
+--- Modifications to add various Data Pages including RequestPage, HeartRatePages ---
+--- Modifications to add much more human readable logging that does lookups on message ids, codes etc and dissects 'data' payloads and applies a page unpacker on them ---
+
+e.g.
+[Thread-2]	2013-08-09 16:55:25,410	DEBUG	Processing reply. RECV_BROADCAST_DATA(channel_number=0, data=0x4301000301000200 -> Beacon{'auth_type': 3, 'pairing_enabled': 0, 'data_available': 0, 'device_state': 0, 'period': 1, 'descriptor': 131073, 'upload_enabled': 0, 'data_page_id': 67, 'data': '', 'status_2': 0, 'status_1': 1})
+[Thread-1]	2013-08-09 16:55:09,444	DEBUG	Processing reply. CHANNEL_EVENT(channel_number=0, msg_id=MESG_NETWORK_KEY_ID[70], msg_code=RESPONSE_NO_ERROR[0])
+
+
 # Python Ant Downloader
 
 Tools for extracting data from Garmin wireless (ANT) GPS devices. The project goal is to support downloading data from GPS unit and upload to Garmin Connect. It doesn't support support workout, profile, or activitly uploads like the Windows "Garmin ANT Agent."

@@ -59,16 +59,17 @@ class Beacon(object):
             result.data_page_id, result.status_1, result.status_2, result.auth_type, result.descriptor = cls.__struct.unpack(msg[:8])
             result.period = 0x07 & result.status_1
             result.pairing_enabled = 0x80 & result.status_1
-            result.upload_enabled = 0x10 & result.status_1
-            result.data_available = 0x20 & result.status_1
-            result.device_state = 0x0f & result.status_2
+            result.upload_enabled  = 0x10 & result.status_1
+            result.data_available  = 0x20 & result.status_1
+            result.device_state    = 0x0f & result.status_2
             result.data = msg[8:]
             return result
 
     def __str__(self):
+        #TODO : Processing of data
         return self.__class__.__name__ + str(self.__dict__)
 
-
+#Strangely, even though the command data is a sub part of a beacon, the beacon is made the field of the command if it is recognised....
 class Command(object):
 
     DATA_PAGE_ID = 0x44
@@ -84,8 +85,16 @@ class Command(object):
             result.beacon = beacon
             result.data_page_id, result.command_id = cls.__struct.unpack(beacon.data[:8])
             return result
+        else:
+            #Command standing on its own (not as sub part of a beacon)
+            if ord(msg[0]) == Command.DATA_PAGE_ID:
+                result = cls()
+                result.data_page_id, result.command_id = cls.__struct.unpack(msg[:8])
+                result.data = msg[2:]
+                return result
 
     def __str__(self):
+        #TODO : Processing of data
         return self.__class__.__name__ + str(self.__dict__)
 
 
@@ -145,8 +154,14 @@ class Auth(Command):
     def unpack(cls, msg):
         auth = super(Auth, cls).unpack(msg)
         if auth and auth.command_id & 0x7F == Auth.COMMAND_ID:
-            data_page_id, command_id, auth.response_type, auth_string_length, auth.client_id = cls.__struct.unpack(auth.beacon.data[:8])
-            auth.auth_string = auth.beacon.data[8:8 + auth_string_length]
+            try:
+                #This only works for Auth as a sub part of a beacon....
+                data_page_id, command_id, auth.response_type, auth_string_length, auth.client_id = cls.__struct.unpack(auth.beacon.data[:8])
+                auth.auth_string = auth.beacon.data[8:8 + auth_string_length]
+            except:
+                #If we want to unpack Auth just as data, that needs to use msg
+                data_page_id, command_id, auth.response_type, auth_string_length, auth.client_id = cls.__struct.unpack(msg[:8])
+                auth.auth_string = msg[8:8 + auth_string_length]
             return auth
 
 
@@ -316,7 +331,7 @@ class Host(object):
         
     def link(self):
         """
-        Atempt to create an ANTFS link with the device
+        Attempt to create an ANTFS link with the device
         who's beacon was most recently returned by search().
         If this channel is not tracking, the operation will
         block until a device is found, and attempt a link.
@@ -329,7 +344,7 @@ class Host(object):
         self._configure_antfs_period(self.beacon.period)
         # wait for channel to sync
         Beacon.unpack(self.channel.recv_broadcast(0))
-        # send the link commmand
+        # send the link command
         link = Link(freq=random.choice(self.transport_freqs), period=self.transport_period)
         _log.debug("Linking with device. freq=24%02dmhz", link.frequency)
         self.channel.send_acknowledged(link.pack())
@@ -345,13 +360,13 @@ class Host(object):
     def auth(self, pair=True, timeout=60):
         """
         Attempt to create an authenticated transport
-        with the device we are currenly linked. Not
+        with the device we are currently linked. Not
         valid unless device is in link status.
         If a client key is known, transport will be
-        openned without user interaction. If key is unkown
+        opened without user interaction. If key is unknown
         we will attempt to pair with device (which must
-        be acknowledged by human on GPS device.)
-        If paising is not enabled Auth is impossible.
+        be acknowledged by a human on GPS device.)
+        If pairing is not enabled Auth is impossible.
         Error raised if auth is not successful.
         Timeout only applies user interaction during pairing process.
         """
@@ -381,7 +396,7 @@ class Host(object):
                 _log.warning("Device pairing failed. Removing key from db. Try re-pairing.")
                 self.known_client_keys.delete_device(client_id)
         elif pair:
-            _log.debug("Device unkown, requesting pairing.")
+            _log.debug("Device unknown, requesting pairing.")
             auth_cmd = Auth(Auth.OP_PAIR, ANTFS_HOST_NAME)
             self.channel.write(auth_cmd.pack())
             while True:

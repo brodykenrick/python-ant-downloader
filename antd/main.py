@@ -103,7 +103,7 @@ def downloader():
                         if antd.cfg.get_delete_from_device(): dev.delete_runs()
                     _log.info("Closing session.")
                     host.disconnect()
-                    _log.info("Excuting plugins.")
+                    _log.info("Executing plugins.")
                     # dispatcher data to plugins
                     antd.plugin.publish_data(host.device_id, "raw", [raw_full_path])
                 elif not args.daemon:
