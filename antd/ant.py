@@ -43,47 +43,162 @@ SYNC = 0xA4
 # Direction of command
 DIR_IN = "IN"
 DIR_OUT = "OUT"
-# Channel response codes
-RESPONSE_NO_ERROR = 0
-CHANNEL_IN_WRONG_STATE = 21
-CHANNEL_NOT_OPENED = 22
-CHANNEL_ID_NOT_SET = 24
-CLOSE_ALL_CHANNELS = 25
-TRANSFER_IN_PROGRESS = 31
-TRANSFER_SEQUENCE_NUMBER_ERROR = 32
-TANNSFER_IN_ERROR = 33
-MESSAGE_SIZE_EXCEEDS_LIMIT = 39
-INVALID_MESSAGE = 40
-INVALID_NETWORK_NUMBER = 41
-INVALID_LIST_ID = 48
-INVALID_SCAN_TX_CHANNEL = 49
-INVALID_PARAMETER_PROVIDED = 51
-NVM_FULL_ERROR = 64
-NVM_WRITE_ERROR = 65
-USB_STRING_WRITE_FAIL = 112
-MESG_SERIAL_ERROR_ID = 174
 
-# rf event codes
-EVENT_RX_SEARCH_TIMEOUT = 1
-EVENT_RX_FAIL = 2
-EVENT_TX = 3
-EVENT_TRANSFER_RX_FAILED = 4
-EVENT_TRANSFER_TX_COMPLETED = 5
-EVENT_TRANSFER_TX_FAILED = 6
-EVENT_CHANNEL_CLOSED = 7
-EVENT_RX_FAIL_GO_TO_SEARCH = 8
-EVENT_CHANNEL_COLLISION = 9
-EVENT_TRANSFER_TX_START = 10
-EVENT_SERIAL_QUE_OVERFLOW = 52
-EVENT_QUEUE_OVERFLOW = 53
+#TODO - Adopt this kind of scheme
+#MSG_ID_STR = 'msg_id'
 
-# channel status
-CHANNEL_STATUS_UNASSIGNED = 0
-CHANNEL_STATUS_ASSIGNED = 1
-CHANNEL_STATUS_SEARCHING = 2
-CHANNEL_STATUS_TRACKING = 3
+#http://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
+#BK Added in the lookup
+def enum(*sequential, **named):
+    enums = dict(zip(sequential, range(len(sequential))), **named)
+    reverse = dict((value, key) for key, value in enums.iteritems())
+    enums['strings'] = reverse
+    
+    @classmethod
+    def enum_str_lookup( cls, enum_val ):
+        return cls.strings.get(enum_val, "...")
+    enums['str'] = enum_str_lookup
+    
+    return type('Enum', (), enums)
 
 
+
+#https://code.google.com/p/msp430ant/source/browse/tools/pc_serial_c/antdefines.h
+# Channel (Message) Response/Event Codes
+RESPONSE_CODE = enum \
+(
+    RESPONSE_NO_ERROR               =  0,
+
+    # RF event codes
+    EVENT_RX_SEARCH_TIMEOUT         = 1,
+    EVENT_RX_FAIL                   = 2,
+    EVENT_TX                        = 3,
+    EVENT_TRANSFER_RX_FAILED        = 4,
+    EVENT_TRANSFER_TX_COMPLETED     = 5,
+    EVENT_TRANSFER_TX_FAILED        = 6,
+    EVENT_CHANNEL_CLOSED            = 7,
+    EVENT_RX_FAIL_GO_TO_SEARCH      = 8,
+    EVENT_CHANNEL_COLLISION         = 9,
+    EVENT_TRANSFER_TX_START         = 10,
+
+ #EVENT_TRANSFER_TX_COMPLETED_RSSI
+
+    # Channel response codes
+    CHANNEL_IN_WRONG_STATE          = 21,
+    CHANNEL_NOT_OPENED              = 22,
+    CHANNEL_ID_NOT_SET              = 24,
+    CLOSE_ALL_CHANNELS              = 25,
+
+    TRANSFER_IN_PROGRESS            = 31,
+    TRANSFER_SEQUENCE_NUMBER_ERROR  = 32,
+    TRANSFER_IN_ERROR               = 33,
+#TRANSFER_BUSY
+
+    MESSAGE_SIZE_EXCEEDS_LIMIT      = 39,
+
+    INVALID_MESSAGE                 = 40,
+    INVALID_NETWORK_NUMBER          = 41,
+    INVALID_LIST_ID                 = 48,
+    INVALID_SCAN_TX_CHANNEL         = 49,
+
+    INVALID_PARAMETER_PROVIDED      = 51,
+    EVENT_SERIAL_QUE_OVERFLOW       = 52,
+    EVENT_QUEUE_OVERFLOW            = 53,
+
+    NVM_FULL_ERROR                  = 64,
+    NVM_WRITE_ERROR                 = 65,
+
+    USB_STRING_WRITE_FAIL           = 112,
+    MESG_SERIAL_ERROR_ID            = 174,
+
+)
+
+
+
+
+# Channel Status
+CHANNEL_STATUS = enum \
+(
+   UNASSIGNED       = 0,
+   ASSIGNED         = 1,
+   SEARCHING        = 2,
+   TRACKING         = 3,
+)
+
+#https://code.google.com/p/msp430ant/source/browse/tools/pc_serial_c/antmessage.h
+MESG_ID = enum \
+(
+    INVALID                   = 0x00, 
+    EVENT                     = 0x01,
+    VERSION                   = 0x3E,
+    RESPONSE_EVENT            = 0x40,
+    UNASSIGN_CHANNEL          = 0x41,
+    ASSIGN_CHANNEL            = 0x42,
+    CHANNEL_PERIOD            = 0x43,
+    CHANNEL_SEARCH_TIMEOUT    = 0x44,
+    CHANNEL_RADIO_FREQ        = 0x45,
+    NETWORK_KEY               = 0x46,
+    RADIO_TX_POWER            = 0x47,
+    RADIO_CW_MODE             = 0x48,
+    SEARCH_WAVEFORM           = 0x49,
+    SYSTEM_RESET              = 0x4A,
+    OPEN_CHANNEL              = 0x4B,
+    CLOSE_CHANNEL             = 0x4C,
+    REQUEST                   = 0x4D,
+    BROADCAST_DATA            = 0x4E,
+    ACKNOWLEDGED_DATA         = 0x4F,
+    BURST_DATA                = 0x50,
+    CHANNEL                   = 0x51,
+    CHANNEL_STATUS            = 0x52,
+    RADIO_CW_INIT             = 0x53,
+    CAPABILITIES              = 0x54,
+    NVM_DATA                  = 0x56,
+    NVM_CMD                   = 0x57,
+    NVM_STRING                = 0x58,
+    ID_LIST_ADD               = 0x59,
+    ID_LIST_CONFIG            = 0x5A,
+    OPEN_RX_SCAN              = 0x5B,
+    EXT_CHANNEL_RADIO_FREQ    = 0x5C,
+    EXT_BROADCAST_DATA        = 0x5D,
+    EXT_ACKNOWLEDGED_DATA     = 0x5E,
+    EXT_BURST_DATA            = 0x5F,
+    CHANNEL_RADIO_TX_POWER    = 0x60,
+    GET_SERIAL_NUM            = 0x61,
+    GET_TEMP_CAL              = 0x62,
+    SET_LP_SEARCH_TIMEOUT     = 0x63,
+    SET_TX_SEARCH_ON_NEXT     = 0x64,
+    SERIAL_NUM_SET_CHANNEL    = 0x65,
+    RX_EXT_MESGS_ENABLE       = 0x66,
+    RADIO_CONFIG_ALWAYS       = 0x67,
+    ENABLE_LED_FLASH          = 0x68,
+    AGC_CONFIG                = 0x6A,
+    READ_SEGA                 = 0xA0,
+    SEGA_CMD                  = 0xA1,
+    SEGA_DATA                 = 0xA2,
+    SEGA_ERASE                = 0XA3, 
+    SEGA_WRITE                = 0XA4,
+    SEGA_LOCK                 = 0xA6,
+    FUSECHECK                 = 0xA7,
+    UARTREG                   = 0XA8,
+    MAN_TEMP                  = 0xA9,
+    BIST                      = 0XAA,
+    SELFERASE                 = 0XAB,
+    SET_MFG_BITS              = 0xAC,
+    UNLOCK_INTERFACE          = 0xAD,
+    IO_STATE                  = 0xB0,
+    CFG_STATE                 = 0xB1,
+    RSSI                      = 0xC0,
+    RSSI_BROADCAST_DATA       = 0xC1,
+    RSSI_ACKNOWLEDGED_DATA    = 0xC2,
+    RSSI_BURST_DATA           = 0xC3,
+    RSSI_SEARCH_THRESHOLD     = 0xC4,
+    BTH_BROADCAST_DATA        = 0xD0,
+    BTH_ACKNOWLEDGED_DATA     = 0xD1,
+    BTH_BURST_DATA            = 0xD2,
+    BTH_EXT_BROADCAST_DATA    = 0xD3,
+    BTH_EXT_ACKNOWLEDGED_DATA = 0xD4,
+    BTH_EXT_BURST_DATA        = 0xD5,
+)
 
 
 class AntError(Exception):
@@ -176,7 +291,7 @@ def data_tostring(data):
     """
     Return a string repenting bytes of given
     data. used by send() methods to convert
-    arugment to required string.
+    argument to required string.
     """
     if isinstance(data, list):
         return array.array("B", data).tostring()
@@ -239,7 +354,7 @@ def close_channel_matcher(request, reply):
              and reply.msg_code != 0)
         or (isinstance(reply, ChannelEvent)
              and reply.msg_id == 1
-             and reply.msg_code == EVENT_CHANNEL_CLOSED))
+             and reply.msg_code == RESPONSE_CODE.EVENT_CHANNEL_CLOSED))
 
 def request_message_matcher(request, reply):
     return default_matcher(request, reply) or reply.ID == request.msg_id
@@ -252,330 +367,28 @@ def send_data_matcher(request, reply):
     return (close_channel_matcher(request, reply)
         or (isinstance(reply, ChannelEvent)
             and reply.msg_id == 1
-            and reply.msg_code in (EVENT_TX, EVENT_TRANSFER_TX_COMPLETED, EVENT_TRANSFER_TX_FAILED)))
+            and reply.msg_code in (RESPONSE_CODE.EVENT_TX, RESPONSE_CODE.EVENT_TRANSFER_TX_COMPLETED, RESPONSE_CODE.EVENT_TRANSFER_TX_FAILED)))
 
 # validators define strategy for determining
 # if a give reply from ANT should raise an
 # error. 
 
 def default_validator(request, reply):
-    if isinstance(reply, ChannelEvent) and reply.msg_code in (EVENT_CHANNEL_CLOSED, CHANNEL_NOT_OPENED):
+    if isinstance(reply, ChannelEvent) and reply.msg_code in (RESPONSE_CODE.EVENT_CHANNEL_CLOSED, RESPONSE_CODE.CHANNEL_NOT_OPENED):
         return AntChannelClosedError("Channel closed. %s" % reply)
-    elif isinstance(reply, ChannelEvent) and reply.msg_code != RESPONSE_NO_ERROR:
+    elif isinstance(reply, ChannelEvent) and reply.msg_code != RESPONSE_CODE.RESPONSE_NO_ERROR:
         return AntError("Failed to execute command message_code=%d. %s" % (reply.msg_code, reply))
 
 def close_channel_validator(request, reply):
-    if not (isinstance(reply, ChannelEvent) and reply.msg_id == 1 and reply.msg_code == EVENT_CHANNEL_CLOSED):
+    if not (isinstance(reply, ChannelEvent) and reply.msg_id == 1 and reply.msg_code == RESPONSE_CODE.EVENT_CHANNEL_CLOSED):
         return default_validator(request, reply)
 
 def send_data_validator(request, reply):
-    if isinstance(reply, ChannelEvent) and reply.msg_id == 1 and reply.msg_code == EVENT_TRANSFER_TX_FAILED:
+    if isinstance(reply, ChannelEvent) and reply.msg_id == 1 and reply.msg_code == RESPONSE_CODE.EVENT_TRANSFER_TX_FAILED:
         return AntTxFailedError("Send message was not acknowledged by peer. %s" % reply)
-    elif not (isinstance(reply, ChannelEvent) and reply.msg_id == 1 and reply.msg_code in (EVENT_TX, EVENT_TRANSFER_TX_COMPLETED)):
+    elif not (isinstance(reply, ChannelEvent) and reply.msg_id == 1 and reply.msg_code in (RESPONSE_CODE.EVENT_TX, RESPONSE_CODE.EVENT_TRANSFER_TX_COMPLETED)):
         return default_validator(request, reply)
 
-#String from message code
-
-#See more [better definitions] @ https://code.google.com/p/msp430ant/source/browse/tools/pc_serial_c/antdefines.h
-#Plus there are some in the docs that aren't here....
-#TODO - This will be cleaner/single point of change if we make this come from an enum directly
-def message_code_lookup(code):
-# channel response codes
-    if (code == RESPONSE_NO_ERROR):
-        return "RESPONSE_NO_ERROR"
-    elif (code == CHANNEL_IN_WRONG_STATE):
-        return "CHANNEL_IN_WRONG_STATE"
-    elif (code == CHANNEL_NOT_OPENED):
-        return "CHANNEL_NOT_OPENED"
-    elif (code == CHANNEL_ID_NOT_SET):
-        return "CHANNEL_ID_NOT_SET"
-    elif (code == CLOSE_ALL_CHANNELS):
-        return "CLOSE_ALL_CHANNELS"
-    elif (code == TRANSFER_IN_PROGRESS):
-        return "TRANSFER_IN_PROGRESS"
-    elif (code == TRANSFER_SEQUENCE_NUMBER_ERROR):
-        return "TRANSFER_SEQUENCE_NUMBER_ERROR"
-    elif (code == TANNSFER_IN_ERROR):
-        return "TANNSFER_IN_ERROR"
-    elif (code == MESSAGE_SIZE_EXCEEDS_LIMIT):
-        return "MESSAGE_SIZE_EXCEEDS_LIMIT"
-    elif (code == INVALID_MESSAGE):
-        return "INVALID_MESSAGE"
-    elif (code == INVALID_NETWORK_NUMBER):
-        return "INVALID_NETWORK_NUMBER"
-    elif (code == INVALID_LIST_ID):
-        return "INVALID_LIST_ID"
-    elif (code == INVALID_SCAN_TX_CHANNEL):
-        return "INVALID_SCAN_TX_CHANNEL"
-    elif (code == INVALID_PARAMETER_PROVIDED):
-        return "INVALID_PARAMETER_PROVIDED"
-    elif (code == NVM_FULL_ERROR):
-        return "NVM_FULL_ERROR"
-    elif (code == NVM_WRITE_ERROR):
-        return "NVM_WRITE_ERROR"
-    elif (code == USB_STRING_WRITE_FAIL):
-        return "USB_STRING_WRITE_FAIL"
-    elif (code == MESG_SERIAL_ERROR_ID):
-        return "MESG_SERIAL_ERROR_ID"
-    
-    elif (code == EVENT_RX_SEARCH_TIMEOUT):
-        return "EVENT_RX_SEARCH_TIMEOUT"
-    elif (code == EVENT_RX_FAIL):
-        return "EVENT_RX_FAIL"
-    elif (code == EVENT_TX):
-        return "EVENT_TX"
-    elif (code == EVENT_TRANSFER_RX_FAILED):
-        return "EVENT_TRANSFER_RX_FAILED"
-    elif (code == EVENT_TRANSFER_TX_COMPLETED):
-        return "EVENT_TRANSFER_TX_COMPLETED"
-    elif (code == EVENT_TRANSFER_TX_FAILED):
-        return "EVENT_TRANSFER_TX_FAILED"
-    elif (code == EVENT_CHANNEL_CLOSED):
-        return "EVENT_CHANNEL_CLOSED"
-    elif (code == EVENT_RX_FAIL_GO_TO_SEARCH):
-        return "EVENT_RX_FAIL_GO_TO_SEARCH"
-    elif (code == EVENT_CHANNEL_COLLISION):
-        return "EVENT_CHANNEL_COLLISION"
-    elif (code == EVENT_TRANSFER_TX_START):
-        return "EVENT_TRANSFER_TX_START"
-    elif (code == EVENT_SERIAL_QUE_OVERFLOW):
-        return "EVENT_SERIAL_QUE_OVERFLOW"
-    elif (code == EVENT_QUEUE_OVERFLOW):
-        return "EVENT_QUEUE_OVERFLOW"
-    else:
-        return "..."
-
-MESG_INVALID_ID                   = 0x00 
-MESG_EVENT_ID                     = 0x01
-MESG_VERSION_ID                   = 0x3E
-MESG_RESPONSE_EVENT_ID            = 0x40
-MESG_UNASSIGN_CHANNEL_ID          = 0x41
-MESG_ASSIGN_CHANNEL_ID            = 0x42
-MESG_CHANNEL_MESG_PERIOD_ID       = 0x43
-MESG_CHANNEL_SEARCH_TIMEOUT_ID    = 0x44
-MESG_CHANNEL_RADIO_FREQ_ID        = 0x45
-MESG_NETWORK_KEY_ID               = 0x46
-MESG_RADIO_TX_POWER_ID            = 0x47
-MESG_RADIO_CW_MODE_ID             = 0x48
-MESG_SEARCH_WAVEFORM_ID           = 0x49
-MESG_SYSTEM_RESET_ID              = 0x4A
-MESG_OPEN_CHANNEL_ID              = 0x4B
-MESG_CLOSE_CHANNEL_ID             = 0x4C
-MESG_REQUEST_ID                   = 0x4D
-MESG_BROADCAST_DATA_ID            = 0x4E
-MESG_ACKNOWLEDGED_DATA_ID         = 0x4F
-MESG_BURST_DATA_ID                = 0x50
-MESG_CHANNEL_ID_ID                = 0x51
-MESG_CHANNEL_STATUS_ID            = 0x52
-MESG_RADIO_CW_INIT_ID             = 0x53
-MESG_CAPABILITIES_ID              = 0x54
-MESG_NVM_DATA_ID                  = 0x56
-MESG_NVM_CMD_ID                   = 0x57
-MESG_NVM_STRING_ID                = 0x58
-MESG_ID_LIST_ADD_ID               = 0x59
-MESG_ID_LIST_CONFIG_ID            = 0x5A
-MESG_OPEN_RX_SCAN_ID              = 0x5B
-MESG_EXT_CHANNEL_RADIO_FREQ_ID    = 0x5C
-MESG_EXT_BROADCAST_DATA_ID        = 0x5D
-MESG_EXT_ACKNOWLEDGED_DATA_ID     = 0x5E
-MESG_EXT_BURST_DATA_ID            = 0x5F
-MESG_CHANNEL_RADIO_TX_POWER_ID    = 0x60
-MESG_GET_SERIAL_NUM_ID            = 0x61
-MESG_GET_TEMP_CAL_ID              = 0x62
-MESG_SET_LP_SEARCH_TIMEOUT_ID     = 0x63
-MESG_SET_TX_SEARCH_ON_NEXT_ID     = 0x64
-MESG_SERIAL_NUM_SET_CHANNEL_ID_ID = 0x65
-MESG_RX_EXT_MESGS_ENABLE_ID       = 0x66
-MESG_RADIO_CONFIG_ALWAYS_ID       = 0x67
-MESG_ENABLE_LED_FLASH_ID          = 0x68
-MESG_AGC_CONFIG_ID                = 0x6A
-MESG_READ_SEGA_ID                 = 0xA0
-MESG_SEGA_CMD_ID                  = 0xA1
-MESG_SEGA_DATA_ID                 = 0xA2
-MESG_SEGA_ERASE_ID                = 0XA3  
-MESG_SEGA_WRITE_ID                = 0XA4
-MESG_SEGA_LOCK_ID                 = 0xA6
-MESG_FUSECHECK_ID                 = 0xA7
-MESG_UARTREG_ID                   = 0XA8
-MESG_MAN_TEMP_ID                  = 0xA9
-MESG_BIST_ID                      = 0XAA
-MESG_SELFERASE_ID                 = 0XAB
-MESG_SET_MFG_BITS_ID              = 0xAC
-MESG_UNLOCK_INTERFACE_ID          = 0xAD
-MESG_IO_STATE_ID                  = 0xB0
-MESG_CFG_STATE_ID                 = 0xB1
-MESG_RSSI_ID                      = 0xC0
-MESG_RSSI_BROADCAST_DATA_ID       = 0xC1
-MESG_RSSI_ACKNOWLEDGED_DATA_ID    = 0xC2
-MESG_RSSI_BURST_DATA_ID           = 0xC3
-MESG_RSSI_SEARCH_THRESHOLD_ID     = 0xC4
-MESG_BTH_BROADCAST_DATA_ID        = 0xD0
-MESG_BTH_ACKNOWLEDGED_DATA_ID     = 0xD1
-MESG_BTH_BURST_DATA_ID            = 0xD2
-MESG_BTH_EXT_BROADCAST_DATA_ID    = 0xD3
-MESG_BTH_EXT_ACKNOWLEDGED_DATA_ID = 0xD4
-MESG_BTH_EXT_BURST_DATA_ID        = 0xD5
-
-
-#https://code.google.com/p/msp430ant/source/browse/tools/pc_serial_c/antmessage.h
-#TODO - This will be cleaner/single point of change if we make this come from an enum directly
-def message_id_lookup(id):
-    if (id == MESG_INVALID_ID):
-        return "MESG_INVALID_ID"
-    elif (id == MESG_EVENT_ID):
-        return "MESG_EVENT_ID"
-    elif (id == MESG_VERSION_ID):
-        return "MESG_VERSION_ID"
-    elif (id == MESG_RESPONSE_EVENT_ID):
-        return "MESG_RESPONSE_EVENT_ID"
-    elif (id == MESG_UNASSIGN_CHANNEL_ID):
-        return "MESG_UNASSIGN_CHANNEL_ID"
-    elif (id == MESG_ASSIGN_CHANNEL_ID):
-        return "MESG_ASSIGN_CHANNEL_ID"
-    elif (id == MESG_CHANNEL_MESG_PERIOD_ID):
-        return "MESG_CHANNEL_MESG_PERIOD_ID"
-    elif (id == MESG_CHANNEL_SEARCH_TIMEOUT_ID):
-        return "MESG_CHANNEL_SEARCH_TIMEOUT_ID"
-    elif (id == MESG_CHANNEL_RADIO_FREQ_ID):
-        return "MESG_CHANNEL_RADIO_FREQ_ID"
-    elif (id == MESG_NETWORK_KEY_ID):
-        return "MESG_NETWORK_KEY_ID"
-    elif (id == MESG_RADIO_TX_POWER_ID):
-        return "MESG_RADIO_TX_POWER_ID"
-    elif (id == MESG_RADIO_CW_MODE_ID):
-        return "MESG_RADIO_CW_MODE_ID"
-    elif (id == MESG_SEARCH_WAVEFORM_ID):
-        return "MESG_SEARCH_WAVEFORM_ID"
-    elif (id == MESG_SYSTEM_RESET_ID):
-        return "MESG_SYSTEM_RESET_ID"
-    elif (id == MESG_OPEN_CHANNEL_ID):
-        return "MESG_OPEN_CHANNEL_ID"
-    elif (id == MESG_CLOSE_CHANNEL_ID):
-        return "MESG_CLOSE_CHANNEL_ID"
-    elif (id == MESG_REQUEST_ID):
-        return "MESG_REQUEST_ID"
-    elif (id == MESG_BROADCAST_DATA_ID):
-        return "MESG_BROADCAST_DATA_ID"
-    elif (id == MESG_ACKNOWLEDGED_DATA_ID):
-        return "MESG_ACKNOWLEDGED_DATA_ID"
-    elif (id == MESG_BURST_DATA_ID):
-        return "MESG_BURST_DATA_ID"
-    elif (id == MESG_CHANNEL_ID_ID):
-        return "MESG_CHANNEL_ID_ID"
-    elif (id == MESG_CHANNEL_STATUS_ID):
-        return "MESG_CHANNEL_STATUS_ID"
-    elif (id == MESG_RADIO_CW_INIT_ID):
-        return "MESG_RADIO_CW_INIT_ID"
-    elif (id == MESG_CAPABILITIES_ID):
-        return "MESG_CAPABILITIES_ID"
-    elif (id == MESG_NVM_DATA_ID):
-        return "MESG_NVM_DATA_ID"
-    elif (id == MESG_NVM_CMD_ID):
-        return "MESG_NVM_CMD_ID"
-    elif (id == MESG_NVM_STRING_ID):
-        return "MESG_NVM_STRING_ID"
-    elif (id == MESG_ID_LIST_ADD_ID):
-        return "MESG_ID_LIST_ADD_ID"
-    elif (id == MESG_ID_LIST_CONFIG_ID):
-        return "MESG_ID_LIST_CONFIG_ID"
-    elif (id == MESG_OPEN_RX_SCAN_ID):
-        return "MESG_OPEN_RX_SCAN_ID"
-    elif (id == MESG_EXT_CHANNEL_RADIO_FREQ_ID):
-        return "MESG_EXT_CHANNEL_RADIO_FREQ_ID"
-    elif (id == MESG_EXT_BROADCAST_DATA_ID):
-        return "MESG_EXT_BROADCAST_DATA_ID"
-    elif (id == MESG_EXT_ACKNOWLEDGED_DATA_ID):
-        return "MESG_EXT_ACKNOWLEDGED_DATA_ID"
-    elif (id == MESG_EXT_BURST_DATA_ID):
-        return "MESG_EXT_BURST_DATA_ID"
-    elif (id == MESG_CHANNEL_RADIO_TX_POWER_ID):
-        return "MESG_CHANNEL_RADIO_TX_POWER_ID"
-    elif (id == MESG_GET_SERIAL_NUM_ID):
-        return "MESG_GET_SERIAL_NUM_ID"
-    elif (id == MESG_GET_TEMP_CAL_ID):
-        return "MESG_GET_TEMP_CAL_ID"
-    elif (id == MESG_SET_LP_SEARCH_TIMEOUT_ID):
-        return "MESG_SET_LP_SEARCH_TIMEOUT_ID"
-    elif (id == MESG_SET_TX_SEARCH_ON_NEXT_ID):
-        return "MESG_SET_TX_SEARCH_ON_NEXT_ID"
-    elif (id == MESG_SERIAL_NUM_SET_CHANNEL_ID_ID):
-        return "MESG_SERIAL_NUM_SET_CHANNEL_ID_ID"
-    elif (id == MESG_RX_EXT_MESGS_ENABLE_ID):
-        return "MESG_RX_EXT_MESGS_ENABLE_ID"
-    elif (id == MESG_RADIO_CONFIG_ALWAYS_ID):
-        return "MESG_RADIO_CONFIG_ALWAYS_ID"
-    elif (id == MESG_ENABLE_LED_FLASH_ID):
-        return "MESG_ENABLE_LED_FLASH_ID"
-    elif (id == MESG_AGC_CONFIG_ID):
-        return "MESG_AGC_CONFIG_ID"
-    elif (id == MESG_READ_SEGA_ID):
-        return "MESG_READ_SEGA_ID"
-    elif (id == MESG_SEGA_CMD_ID):
-        return "MESG_SEGA_CMD_ID"
-    elif (id == MESG_SEGA_DATA_ID):
-        return "MESG_SEGA_DATA_ID"
-    elif (id == MESG_SEGA_ERASE_ID):
-        return "MESG_SEGA_ERASE_ID"  
-    elif (id == MESG_SEGA_WRITE_ID):
-        return "MESG_SEGA_WRITE_ID"
-    elif (id == MESG_SEGA_LOCK_ID):
-        return "MESG_SEGA_LOCK_ID"
-    elif (id == MESG_FUSECHECK_ID):
-        return "MESG_FUSECHECK_ID"
-    elif (id == MESG_UARTREG_ID):
-        return "MESG_UARTREG_ID"
-    elif (id == MESG_MAN_TEMP_ID):
-        return "MESG_MAN_TEMP_ID"
-    elif (id == MESG_BIST_ID):
-        return "MESG_BIST_ID"
-    elif (id == MESG_SELFERASE_ID):
-        return "MESG_SELFERASE_ID"
-    elif (id == MESG_SET_MFG_BITS_ID):
-        return "MESG_SET_MFG_BITS_ID"
-    elif (id == MESG_UNLOCK_INTERFACE_ID):
-        return "MESG_UNLOCK_INTERFACE_ID"
-    elif (id == MESG_IO_STATE_ID):
-        return "MESG_IO_STATE_ID"
-    elif (id == MESG_CFG_STATE_ID):
-        return "MESG_CFG_STATE_ID"
-    elif (id == MESG_RSSI_ID):
-        return "MESG_RSSI_ID"
-    elif (id == MESG_RSSI_BROADCAST_DATA_ID):
-        return "MESG_RSSI_BROADCAST_DATA_ID"
-    elif (id == MESG_RSSI_ACKNOWLEDGED_DATA_ID):
-        return "MESG_RSSI_ACKNOWLEDGED_DATA_ID"
-    elif (id == MESG_RSSI_BURST_DATA_ID):
-        return "MESG_RSSI_BURST_DATA_ID"
-    elif (id == MESG_RSSI_SEARCH_THRESHOLD_ID):
-        return "MESG_RSSI_SEARCH_THRESHOLD_ID"
-    elif (id == MESG_BTH_BROADCAST_DATA_ID):
-        return "MESG_BTH_BROADCAST_DATA_ID"
-    elif (id == MESG_BTH_ACKNOWLEDGED_DATA_ID):
-        return "MESG_BTH_ACKNOWLEDGED_DATA_ID"
-    elif (id == MESG_BTH_BURST_DATA_ID):
-        return "MESG_BTH_BURST_DATA_ID"
-    elif (id == MESG_BTH_EXT_BROADCAST_DATA_ID):
-        return "MESG_BTH_EXT_BROADCAST_DATA_ID"
-    elif (id == MESG_BTH_EXT_ACKNOWLEDGED_DATA_ID):
-        return "MESG_BTH_EXT_ACKNOWLEDGED_DATA_ID"
-    elif (id == MESG_BTH_EXT_BURST_DATA_ID):
-        return "MESG_BTH_EXT_BURST_DATA_ID"
-    else:
-        return "..."
-
-
-# channel status
-def channel_status_lookup(channel_status):
-    if (channel_status == CHANNEL_STATUS_UNASSIGNED):
-        return "UNASSIGNED"
-    elif (channel_status == CHANNEL_STATUS_ASSIGNED):
-        return "ASSIGNED"
-    elif (channel_status == CHANNEL_STATUS_SEARCHING):
-        return "SEARCHING"
-    elif (channel_status == CHANNEL_STATUS_TRACKING):
-        return "TRACKING"
-    else:
-        return "..."
 
 
 #id_or_ids is single value or a list of values (trying to accommodate heart rate pages.....)
@@ -698,7 +511,7 @@ DATA_PAGE_COMMON_MANUFACTURERS_INFO = 0x50
 
 
 #Some bit field ops as structs don't deal with them nicely
-#TODO -- Lookup if structs can easily be/has been extended to support bits
+#TODO -- Lookup if structs can easily be/has been extended to support bits (ctypes??)
 HeartRatePage0 = data_page("HeartRatePage0", [DATA_PAGE_HEART_RATE_0, DATA_PAGE_HEART_RATE_0ALT], "BBBBBBBB", \
                            ["data_page_number_and_page_change_toggle", "reserved1", "reserved2", "reserved3", "heart_beat_event_time_lsb", "heart_beat_event_time_msb", "heart_beat_count", "computed_heart_rate"])
 HeartRatePage1 = data_page("HeartRatePage1", [DATA_PAGE_HEART_RATE_1, DATA_PAGE_HEART_RATE_1ALT], "BBBBBBBB", \
@@ -714,6 +527,7 @@ RequestDataPage = data_page("RequestDataPage", DATA_PAGE_REQUEST_DATA, "BBBBBBBB
                                ["data_page_number", "reserved1", "reserved2", "descriptor_byte1", "descriptor_byte2", "requested_transmission_response", "requested_page_number", "command_id"]) 
 
 
+#TODO: Add a lookup on the data pages by registering them like the messages
 def decode_payload_data_str( data ): #TODO: Confirm name is correct
     #print "decode_payload_data_str : " + data.encode("hex")
 
@@ -816,17 +630,17 @@ def message(direction, name, id, pack_format, arg_names, retry_policy=default_re
             temp_str = self.NAME + "("
             for (k, v) in self.__dict__.items():
                 temp_str += str(k)+"="
-                if (str(k) in ('data')) and not(self.ID == MESG_BURST_DATA_ID):
+                if (str(k) in ('data')) and not(self.ID == MESG_ID.BURST_DATA):
                     # Decode data as a data page in all but SEND/RECV_BURST_TRANSFER_PACKET
                     temp_str += "0x"+ v.encode("HEX") + " -> " + decode_payload_data_str(v)
-                elif (str(k) in ('data')) and (self.ID == MESG_BURST_DATA_ID):
+                elif (str(k) in ('data')) and (self.ID == MESG_ID.BURST_DATA):
                     temp_str += "0x"+ v.encode("HEX") + " ?-> " + decode_payload_data_str(v)
                 elif str(k) in ('msg_id'): #Lookup and have a nice human readable output. TODO: Bad form that key is here.....
-                    temp_str += message_id_lookup(v) + "["+str(v)+"]"
+                    temp_str += MESG_ID.str(v) + "["+str(v)+"]"
                 elif str(k) in ('msg_code'): #Lookup and have a nice human readable output. TODO: Bad form that key is here.....
-                    temp_str += message_code_lookup(v) +"["+str(v)+"]"
+                    temp_str += RESPONSE_CODE.str(v) +"["+str(v)+"]"
                 elif str(k) in ('channel_status'): #Lookup and have a nice human readable output. TODO: Bad form that key is here.....
-                    temp_str += channel_status_lookup(v) +"["+str(v)+"]"
+                    temp_str += CHANNEL_STATUS.str(v) +"["+str(v)+"]"
                 elif isinstance(v, basestring): #and not(all(ord(c) < 127 and c in string.printable for c in v)):
                     #Not sure on all strings with hex data in them, but if they do then treat them as such...
                     temp_str += "0x"+ v.encode("HEX")
@@ -904,7 +718,7 @@ class ReadData(RequestMessage):
     def is_reply(self, cmd):
         return ((same_channel_or_network_matcher(self, cmd)
                     and isinstance(cmd, ChannelStatus)
-                    and cmd.channel_status & 0x03 not in (CHANNEL_STATUS_SEARCHING, CHANNEL_STATUS_TRACKING))
+                    and cmd.channel_status & 0x03 not in (CHANNEL_STATUS.SEARCHING, CHANNEL_STATUS.TRACKING))
                 or close_channel_matcher(self, cmd))
 
     def validate_reply(self, cmd):
@@ -1246,7 +1060,7 @@ class Session(object):
                     self._burst_buffer[channel_number] = []
             # a burst transfer failed, any data currently read is discarded.
             # we assume the sender will retransmit the entire payload.
-            elif isinstance(cmd, ChannelEvent) and cmd.msg_id == 1 and cmd.msg_code == EVENT_TRANSFER_RX_FAILED:
+            elif isinstance(cmd, ChannelEvent) and cmd.msg_id == 1 and cmd.msg_code == RESPONSE_CODE.EVENT_TRANSFER_RX_FAILED:
                 _log.warning("Burst transfer failed, discarding data. %s", cmd)
                 self._burst_buffer[cmd.channel_number] = []
         except IndexError:
@@ -1282,15 +1096,15 @@ class Session(object):
 
     def _handle_log(self, msg):
         if isinstance(msg, ChannelEvent) and msg.msg_id == 1:
-            if msg.msg_code == EVENT_RX_SEARCH_TIMEOUT:
+            if msg.msg_code == RESPONSE_CODE.EVENT_RX_SEARCH_TIMEOUT:
                 _log.warning("RF channel timed out searching for device. channel_number=%d", msg.channel_number)
-            elif msg.msg_code == EVENT_RX_FAIL:
+            elif msg.msg_code == RESPONSE_CODE.EVENT_RX_FAIL:
                 _log.warning("Failed to receive RF beacon at expected period. channel_number=%d", msg.channel_number)
-            elif msg.msg_code == EVENT_RX_FAIL_GO_TO_SEARCH:
+            elif msg.msg_code == RESPONSE_CODE.EVENT_RX_FAIL_GO_TO_SEARCH:
                 _log.warning("Channel dropped to search do to too many dropped messages. channel_number=%d", msg.channel_number)
-            elif msg.msg_code == EVENT_CHANNEL_COLLISION:
+            elif msg.msg_code == RESPONSE_CODE.EVENT_CHANNEL_COLLISION:
                 _log.warning("Channel collision, another RF device intefered with channel. channel_number=%d", msg.channel_number)
-            elif msg.msg_code == EVENT_SERIAL_QUE_OVERFLOW:
+            elif msg.msg_code == RESPONSE_CODE.EVENT_SERIAL_QUE_OVERFLOW:
                 _log.error("USB Serial buffer overflow. PC reading too slow.")
 
     def _set_result(self, result):
