@@ -289,7 +289,7 @@ def tokenize_message(msg):
 
 def data_tostring(data):
     """
-    Return a string repenting bytes of given
+    Return a string representing bytes of given
     data. used by send() methods to convert
     argument to required string.
     """
@@ -389,6 +389,14 @@ def send_data_validator(request, reply):
     elif not (isinstance(reply, ChannelEvent) and reply.msg_id == 1 and reply.msg_code in (RESPONSE_CODE.EVENT_TX, RESPONSE_CODE.EVENT_TRANSFER_TX_COMPLETED)):
         return default_validator(request, reply)
 
+
+DEVICE_TYPE = enum \
+(
+   INVALID          = -1,
+   GPS              = 0,
+   HRM              = 120,
+   SDM              = 124,
+)
 
 
 #id_or_ids is single value or a list of values (trying to accommodate heart rate pages.....)
@@ -505,6 +513,8 @@ DATA_PAGE_HEART_RATE_3ALT           = 0x83
 DATA_PAGE_HEART_RATE_4              = 0x04
 DATA_PAGE_HEART_RATE_4ALT           = 0x84
 
+DATA_PAGE_SPEED_DISTANCE_1          = 0x01
+
 DATA_PAGE_REQUEST_DATA              = 0x46
 
 DATA_PAGE_COMMON_MANUFACTURERS_INFO = 0x50
@@ -523,12 +533,16 @@ HeartRatePage3 = data_page("HeartRatePage3", [DATA_PAGE_HEART_RATE_3, DATA_PAGE_
 HeartRatePage4 = data_page("HeartRatePage4", [DATA_PAGE_HEART_RATE_4, DATA_PAGE_HEART_RATE_4ALT], "BBBBBBBB", \
                            ["data_page_number_and_page_change_toggle", "manufacturer_specific", "previous_heart_beat_event_lsb", "previous_heart_beat_event_msb", "heart_beat_event_time_lsb", "heart_beat_event_time_msb", "heart_beat_count", "computed_heart_rate"])
 
-RequestDataPage = data_page("RequestDataPage", DATA_PAGE_REQUEST_DATA, "BBBBBBBB", \
-                               ["data_page_number", "reserved1", "reserved2", "descriptor_byte1", "descriptor_byte2", "requested_transmission_response", "requested_page_number", "command_id"]) 
+SpeedDistancePage1 = data_page("SpeedDistancePage1", DATA_PAGE_SPEED_DISTANCE_1, "BBBBBBBB", \
+                           ["data_page_number", "time_fractional", "time_integer", "distance_integer", "distance_fractional_and_instantaneous_speed_integer", "instantaneous_speed_fractional", "stride_count", "update_latency"]) 
 
+RequestDataPage = data_page("RequestDataPage", DATA_PAGE_REQUEST_DATA, "BBBBBBBB", \
+                            ["data_page_number", "reserved1", "reserved2", "descriptor_byte1", "descriptor_byte2", "requested_transmission_response", "requested_page_number", "command_id"]) 
+                               
 
 #TODO: Add a lookup on the data pages by registering them like the messages
-def decode_payload_data_str( data ): #TODO: Confirm name is correct
+#TODO: make more Pythonic
+def decode_payload_data_str( data, channel_device_type = DEVICE_TYPE.INVALID): #TODO: Confirm name is correct
     #print "decode_payload_data_str : " + data.encode("hex")
 
     #Other pages don't have unpack
@@ -544,24 +558,33 @@ def decode_payload_data_str( data ): #TODO: Confirm name is correct
     temp = Beacon.unpack(data)
     if temp:
         return str(temp)
-    temp = HeartRatePage0.unpack(data)
-    if temp:
-        return str(temp)
-    temp = HeartRatePage1.unpack(data)
-    if temp:
-        return str(temp)
-    temp = HeartRatePage2.unpack(data)
-    if temp:
-        return str(temp)
-    temp = HeartRatePage3.unpack(data)
-    if temp:
-        return str(temp)
-    temp = HeartRatePage4.unpack(data)
-    if temp:
-        return str(temp)
-    temp = RequestDataPage.unpack(data)
-    if temp:
-        return str(temp)
+        
+    if channel_device_type == DEVICE_TYPE.HRM:
+        temp = HeartRatePage0.unpack(data)
+        if temp:
+            return str(temp)
+        temp = HeartRatePage1.unpack(data)
+        if temp:
+            return str(temp)
+        temp = HeartRatePage2.unpack(data)
+        if temp:
+            return str(temp)
+        temp = HeartRatePage3.unpack(data)
+        if temp:
+            return str(temp)
+        temp = HeartRatePage4.unpack(data)
+        if temp:
+            return str(temp)
+        temp = RequestDataPage.unpack(data)
+        if temp:
+            return str(temp)
+    if channel_device_type == DEVICE_TYPE.SDM:
+        temp = SpeedDistancePage1.unpack(data)
+        if temp:
+            return str(temp)
+        if temp:
+            return str(temp)
+
 
     return "..."
 
@@ -632,9 +655,19 @@ def message(direction, name, id, pack_format, arg_names, retry_policy=default_re
                 temp_str += str(k)+"="
                 if (str(k) in ('data')) and not(self.ID == MESG_ID.BURST_DATA):
                     # Decode data as a data page in all but SEND/RECV_BURST_TRANSFER_PACKET
-                    temp_str += "0x"+ v.encode("HEX") + " -> " + decode_payload_data_str(v)
+                    temp_str += "0x"+ v.encode("HEX") + " -> "
+                    if hasattr(self, 'channel_number'):
+                        device_type = channel_devices[self.channel_number]
+                    else:
+                        device_type = DEVICE_TYPE.INVALID
+                    temp_str += decode_payload_data_str(v, device_type)
                 elif (str(k) in ('data')) and (self.ID == MESG_ID.BURST_DATA):
-                    temp_str += "0x"+ v.encode("HEX") + " ?-> " + decode_payload_data_str(v)
+                    temp_str += "0x"+ v.encode("HEX") + " ?-> "
+                    if hasattr(self, 'channel_number'):
+                        device_type = channel_devices[self.channel_number]
+                    else:
+                        device_type = DEVICE_TYPE.INVALID
+                    temp_str += decode_payload_data_str(v, device_type)
                 elif str(k) in ('msg_id'): #Lookup and have a nice human readable output. TODO: Bad form that key is here.....
                     temp_str += MESG_ID.str(v) + "["+str(v)+"]"
                 elif str(k) in ('msg_code'): #Lookup and have a nice human readable output. TODO: Bad form that key is here.....
@@ -956,7 +989,7 @@ class Session(object):
         seconds. If retry is non-zero, commands returning
         EAGAIN will be retried. retry also appleis to
         RESET_SYSTEM commands. This method blocks until
-        a response if received from hardware or timeout.
+        a response is received from hardware or timeout.
         Care should be taken to ensure timeout is sufficiently
         large. Care should be taken to ensure timeout is
         at least as large as a on message period.
@@ -1156,6 +1189,9 @@ class Session(object):
             self.running_cmd = None
             self.running = False
 
+# 8 channels -- array by channel number
+channel_devices = [DEVICE_TYPE.INVALID,DEVICE_TYPE.INVALID,DEVICE_TYPE.INVALID, DEVICE_TYPE.INVALID,
+                   DEVICE_TYPE.INVALID,DEVICE_TYPE.INVALID,DEVICE_TYPE.INVALID, DEVICE_TYPE.INVALID]
 
 class Channel(object):
 
@@ -1167,6 +1203,7 @@ class Channel(object):
         self._session._send(OpenChannel(self.channel_number))
 
     def close(self):
+        channel_devices[self.channel_number] = DEVICE_TYPE.INVALID
         self._session._send(CloseChannel(self.channel_number))
 
     def assign(self, channel_type, network_number):
@@ -1176,6 +1213,7 @@ class Channel(object):
         self._session._send(UnassignChannel(self.channel_number))
 
     def set_id(self, device_number=0, device_type_id=0, trans_type=0):
+        channel_devices[self.channel_number] = device_type_id
         self._session._send(SetChannelId(self.channel_number, device_number, device_type_id, trans_type))
 
     def set_period(self, messaging_period=8192):
